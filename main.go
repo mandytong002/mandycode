@@ -3,5 +3,6 @@ package main
 import ()
 
 func main() {
-	ui
+	uiyuy
+	yiuyu
 }
