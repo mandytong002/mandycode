@@ -1,1 +1,7 @@
-test
+package main
+
+import ()
+
+func main() {
+
+}
