@@ -7,7 +7,7 @@ func main() {
 	yiuyu
 	dhskdsds
 	hidwshdskj
-	1
+	10
 	9
 	5
 	4
