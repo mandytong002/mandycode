@@ -1,4 +1,6 @@
 coverage:
   notify:
+    slack:
+      frontui:
         url: "https://ins-pipeline.qiniu.io/codecov"
         only_pulls: false
