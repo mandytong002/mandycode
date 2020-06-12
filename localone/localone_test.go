@@ -1,9 +1,10 @@
-package main
+package localone
 
 import (
 	"testing"
 )
 
 func TestLocalOne(t *testing.T) {
-	main()
+	LocalOne(1)
+	LocalOne(2)
 }
