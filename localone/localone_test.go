@@ -1,7 +1,6 @@
-package main
+package localone
 
 import (
-	. "qiniu.com/mandycode/localone"
 	"testing"
 )
 
