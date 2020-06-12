@@ -1,21 +1,16 @@
 package main
 
+func LocalOne(i int) {
 
-import ()
+	if i == 1 {
+		print("i=1")
+	}
+
+	if i == 2 {
+		print("i==2")
+	}
+}
 
 func main() {
-	uiyuy
-	yiuyu
-wgvivih
-teststtstt
-	dhskdsds
-	hidwshdskj
-wgfgv
-	24
-	9
-wwvgiwvwkevhwkvjkj
-	5
-	4
-wgviuwgvhei
-6666
+	LocalOne(1)
 }
