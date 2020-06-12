@@ -1,4 +1,4 @@
-module github.com/qiniu/mandycode
+module github.com/mandytong002/mandycode
 
 go 1.13
 

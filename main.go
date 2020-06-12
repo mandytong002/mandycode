@@ -1,9 +1,7 @@
 package main
 
-import (
-	. "qiniu.com/mandycode/localone"
-)
+import ()
 
 func main() {
-	LocalOne(1)
+	print("1111")
 }
