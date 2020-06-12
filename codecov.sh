@@ -1337,8 +1337,10 @@ then
   fi
 fi
 
-upload_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.XXXXXX`
-adjustments_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.adjustments.XXXXXX`
+#upload_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.XXXXXX`
+#adjustments_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.adjustments.XXXXXX`
+upload_file=`mktemp /tmp/codecov.XXXXXX`
+adjustments_file=`mktemp /tmp/codecov.adjustments.XXXXXX`
 
 cleanup() {
     echo "rm -f $upload_file $adjustments_file $upload_file.gz"
