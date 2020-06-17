@@ -1602,7 +1602,7 @@ if [ "$dump" != "0" ];
 then
   # trim whitespace from query
   say "    ${e}->${x} Dumping upload file (no upload)"
-  echo "$url/upload/v4?$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')"
+  echo "$url/upload/v4?$(echo "$query" | tr -d ' ')"
   cat $upload_file
 else
 
@@ -1615,54 +1615,9 @@ else
   say "    ${e}query:${x} $query"
 
   # Full query without token (to display on terminal output)
-  queryNoToken=$(echo "package=bash-$VERSION&token=secret&$query" | tr -d ' ')
+  queryNoToken=$(echo "$query" | tr -d ' ')
   # now add token to query
-  query=$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')
-
-  if [ "$ft_s3" = "1" ];
-  then
-    i="0"
-    while [ $i -lt 4 ]
-    do
-      i=$[$i+1]
-      say "    ${e}->${x} Pinging Codecov"
-      say "$url/upload/v4?$queryNoToken"
-      res=$(curl $curl_s -X POST $curlargs $cacert \
-            -H 'X-Reduced-Redundancy: false' \
-            -H 'X-Content-Type: application/x-gzip' \
-            "$url/upload/v4?$query" || true)
-      # a good replay is "https://codecov.io" + "\n" + "https://codecov.s3.amazonaws.com/..."
-      status=$(echo "$res" | head -1 | grep 'HTTP ' | cut -d' ' -f2)
-      if [ "$status" = "" ];
-      then
-        s3target=$(echo "$res" | sed -n 2p)
-        say "    ${e}->${x} Uploading"
-
-
-        s3=$(curl $curl_s -fiX PUT $curlawsargs \
-            --data-binary @$upload_file.gz \
-            -H 'Content-Type: application/x-gzip' \
-            -H 'Content-Encoding: gzip' \
-            "$s3target" || true)
-
-
-        if [ "$s3" != "" ];
-        then
-          say "    ${g}->${x} View reports at ${b}$(echo "$res" | sed -n 1p)${x}"
-          exit 0
-        else
-          say "    ${r}X>${x} Failed to upload"
-        fi
-      elif [ "$status" = "400" ];
-      then
-          # 400 Error
-          say "${g}${res}${x}"
-          exit ${exit_with}
-      fi
-      say "    ${e}->${x} Sleeping for 30s and trying again..."
-      sleep 30
-    done
-  fi
+  query=$(echo "$query" | tr -d ' ')
 
   say "    ${e}->${x} Uploading to Codecov"
   i="0"
