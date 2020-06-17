@@ -8,6 +8,7 @@ set -e +o pipefail
 
 VERSION="20200602-f809a24"
 
+PDA_FGF="*****"
 url="https://ins-pipeline.qiniu.io/codecov"
 env="$CODECOV_ENV"
 service=""
@@ -977,17 +978,17 @@ else
   branch=$(urlencode "$branch")
 fi
 
-query="branch=$branch\
-       &commit=$commit\
-       &build=$([ "$build_o" = "" ] && echo "$build" || echo "$build_o")\
-       &build_url=$build_url\
-       &name=$(urlencode "$name")\
-       &tag=$([ "$tag_o" = "" ] && echo "$tag" || echo "$tag_o")\
-       &slug=$([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")\
-       &service=$service\
-       &flags=$flags\
-       &pr=$([ "$pr_o" = "" ] && echo "${pr##\#}" || echo "${pr_o##\#}")\
-       &job=$job"
+query="branch=$branch$PDA_FGF\
+       commit=$commit$PDA_FGF\
+       build=$([ "$build_o" = "" ] && echo "$build" || echo "$build_o")$PDA_FGF\
+       build_url=$build_url$PDA_FGF\
+       name=$(urlencode "$name")$PDA_FGF\
+       tag=$([ "$tag_o" = "" ] && echo "$tag" || echo "$tag_o")$PDA_FGF\
+       slug=$([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")$PDA_FGF\
+       service=$service$PDA_FGF\
+       flags=$flags$PDA_FGF\
+       pr=$([ "$pr_o" = "" ] && echo "${pr##\#}" || echo "${pr_o##\#}")$PDA_FGF\
+       job=$job"
 
 if [ ! -z "$project" ] && [ ! -z "$server_uri" ];
 then
