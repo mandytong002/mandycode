@@ -8,7 +8,7 @@ set -e +o pipefail
 
 VERSION="20200602-f809a24"
 
-url="https://codecov.io"
+url="https://ins-pipeline.qiniu.io/codecov"
 env="$CODECOV_ENV"
 service=""
 token=""
@@ -34,8 +34,8 @@ ft_gcov="1"
 ft_coveragepy="1"
 ft_fix="1"
 ft_search="1"
-ft_s3="1"
-ft_network="1"
+ft_s3="0"  #上传到pandora
+ft_network="0" #不获取
 ft_xcodellvm="1"
 ft_xcodeplist="0"
 ft_gcovout="1"
@@ -1337,8 +1337,8 @@ then
   fi
 fi
 
-upload_file=`mktemp /tmp/codecov.XXXXXX`
-adjustments_file=`mktemp /tmp/codecov.adjustments.XXXXXX`
+upload_file=`mktemp /tmp/pdacodecov.XXXXXX`
+adjustments_file=`mktemp /tmp/pdacodecov.adjustments.XXXXXX`
 
 cleanup() {
     rm -f $upload_file $adjustments_file $upload_file.gz
@@ -1670,13 +1670,17 @@ else
   do
     i=$[$i+1]
 
+    echo "---1-----"
+    echo $curlargs
+    echo $cacert
+    echo "---2-----"
     res=$(curl $curl_s -X POST $curlargs $cacert \
           --data-binary @$upload_file.gz \
           -H 'Content-Type: text/plain' \
           -H 'Content-Encoding: gzip' \
           -H 'X-Content-Encoding: gzip' \
           -H 'Accept: text/plain' \
-          "$url/upload/v2?$query" || echo 'HTTP 500')
+          "$url?origin=$query" || echo 'HTTP 500')
     # HTTP 200
     # http://....
     status=$(echo "$res" | head -1 | cut -d' ' -f2)
