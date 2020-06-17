@@ -1673,6 +1673,7 @@ else
     echo "---1-----"
     echo $curlargs
     echo $cacert
+    echo $query
     echo "---2-----"
     res=$(curl $curl_s -X POST $curlargs $cacert \
           --data-binary @$upload_file.gz \
