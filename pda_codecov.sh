@@ -8,7 +8,7 @@ set -e +o pipefail
 
 VERSION="20200602-f809a24"
 
-url="https://ins-pipeline.qiniu.io/codecov"
+url="https://codecov.io"
 env="$CODECOV_ENV"
 service=""
 token=""
@@ -1337,13 +1337,11 @@ then
   fi
 fi
 
-#upload_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.XXXXXX`
-#adjustments_file=`mktemp /Users/tongjunjie/qbox/src/qiniu.com/mandycode/codecov.adjustments.XXXXXX`
 upload_file=`mktemp /tmp/codecov.XXXXXX`
 adjustments_file=`mktemp /tmp/codecov.adjustments.XXXXXX`
 
 cleanup() {
-    echo "rm -f $upload_file $adjustments_file $upload_file.gz"
+    rm -f $upload_file $adjustments_file $upload_file.gz
 }
 
 trap cleanup INT ABRT TERM
@@ -1422,8 +1420,7 @@ do
         fr=1
         if [ "$clean" = "1" ];
         then
-          #rm "$file"
-          echo "rm $file "
+          rm "$file"
         fi
       else
         say "    ${r}-${x} Skipping empty file $file"
@@ -1590,8 +1587,7 @@ then
     echo "# path=fixes" >> $upload_file
     cat $adjustments_file >> $upload_file
     echo "<<<<<< EOF" >> $upload_file
-    # rm -rf $adjustments_file
-    echo "rm -rf $adjustments_file"
+    rm -rf $adjustments_file
   else
     say "    ${e}->${x} No adjustments found"
   fi
@@ -1606,7 +1602,7 @@ if [ "$dump" != "0" ];
 then
   # trim whitespace from query
   say "    ${e}->${x} Dumping upload file (no upload)"
-  echo "$url?$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')"
+  echo "$url/upload/v4?$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')"
   cat $upload_file
 else
 
@@ -1630,11 +1626,11 @@ else
     do
       i=$[$i+1]
       say "    ${e}->${x} Pinging Codecov"
-      say "$url"
+      say "$url/upload/v4?$queryNoToken"
       res=$(curl $curl_s -X POST $curlargs $cacert \
             -H 'X-Reduced-Redundancy: false' \
             -H 'X-Content-Type: application/x-gzip' \
-            "$url" || true)
+            "$url/upload/v4?$query" || true)
       # a good replay is "https://codecov.io" + "\n" + "https://codecov.s3.amazonaws.com/..."
       status=$(echo "$res" | head -1 | grep 'HTTP ' | cut -d' ' -f2)
       if [ "$status" = "" ];
@@ -1680,7 +1676,7 @@ else
           -H 'Content-Encoding: gzip' \
           -H 'X-Content-Encoding: gzip' \
           -H 'Accept: text/plain' \
-          "$url" || echo 'HTTP 500')
+          "$url/upload/v2?$query" || echo 'HTTP 500')
     # HTTP 200
     # http://....
     status=$(echo "$res" | head -1 | cut -d' ' -f2)
