@@ -8,7 +8,7 @@ set -e +o pipefail
 
 VERSION="20200602-f809a24"
 
-PDA_FGF="*****"
+PDA_FGF=".****"
 url="https://ins-pipeline.qiniu.io/codecov"
 env="$CODECOV_ENV"
 service=""
@@ -80,6 +80,8 @@ g="\033[0;32m"
 r="\033[0;31m"
 e="\033[0;90m"
 x="\033[0m"
+
+qn_projectname="$QN_PROJECTNAME"
 
 show_help() {
 cat << EOF
@@ -186,6 +188,7 @@ cat << EOF
     -d           Don't upload, but dump upload file to stdout
     -K           Remove color from the output
     -v           Verbose mode
+    -M           Project Team
 
 EOF
 }
@@ -242,7 +245,7 @@ parse_yaml() {
 
 if [ $# != 0 ];
 then
-  while getopts "a:A:b:B:cC:dD:e:f:F:g:G:hJ:k:Kn:p:P:r:R:y:s:S:t:T:u:U:vx:X:ZN:" o
+  while getopts "a:A:b:B:cC:dD:e:f:F:g:G:hJ:k:Kn:p:P:r:R:y:s:S:t:T:u:U:vx:X:ZN:M:" o
   do
     case "$o" in
       "N")
@@ -427,6 +430,9 @@ $OPTARG"
         ;;
       "Z")
         exit_with=1
+        ;;
+      "M")
+        qn_projectname=$OPTARG
         ;;
     esac
   done
@@ -977,6 +983,22 @@ then
 else
   branch=$(urlencode "$branch")
 fi
+
+
+
+#上报平台($service)，项目组（pda_projectname），服务（$slug），分支$branch，类型（flags），commit，build(job),build_url（buildid）,时间
+currenttime_ms="`date +%s`000"
+
+pdaorigin="$service$PDA_FGF\
+          $qn_projectname$PDA_FGF\
+          $([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")$PDA_FGF\
+          $branch$PDA_FGF\
+          $flags$PDA_FGF\
+          $commit$PDA_FGF\
+          $([ "$build_o" = "" ] && echo "$build" || echo "$build_o")$PDA_FGF\
+          $build_url$PDA_FGF\
+          $currenttime_ms"
+
 
 query="branch=$branch$PDA_FGF\
        commit=$commit$PDA_FGF\
@@ -1615,11 +1637,14 @@ else
   say "    ${e}url:${x} $url"
   say "    ${e}query:${x} $query"
 
-  # Full query without token (to display on terminal output)
-  queryNoToken=$(echo "$query" | tr -d ' ')
-  # now add token to query
   query=$(echo "$query" | tr -d ' ')
 
+#pdaorigin
+  pdaorigin=$(echo "${pdaorigin}" | tr -d ' ')
+  say "    ${e}pdaorigin:${x} pdaorigin"
+  pdaorigin=$(echo "$pdaorigin" | tr -d ' ')
+
+ #&host=$query 等7.0版本上线后上传
   say "    ${e}->${x} Uploading to Codecov"
   i="0"
   while [ $i -lt 4 ]
@@ -1637,7 +1662,7 @@ else
           -H 'Content-Encoding: gzip' \
           -H 'X-Content-Encoding: gzip' \
           -H 'Accept: text/plain' \
-          "$url?origin=$query" || echo 'HTTP 500')
+          "$url?origin=$pdaorigin" || echo 'HTTP 500')
     # HTTP 200
     # http://....
     status=$(echo "$res" | head -1 | cut -d' ' -f2)
