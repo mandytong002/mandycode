@@ -8,7 +8,8 @@ set -e +o pipefail
 
 VERSION="20200602-f809a24"
 
-url="https://codecov.io"
+PDA_FGF=".****"
+url="https://ins-pipeline.qiniu.io/codecov"
 env="$CODECOV_ENV"
 service=""
 token=""
@@ -34,8 +35,8 @@ ft_gcov="1"
 ft_coveragepy="1"
 ft_fix="1"
 ft_search="1"
-ft_s3="1"
-ft_network="1"
+ft_s3="0"  #上传到pandora
+ft_network="0" #不获取
 ft_xcodellvm="1"
 ft_xcodeplist="0"
 ft_gcovout="1"
@@ -79,6 +80,8 @@ g="\033[0;32m"
 r="\033[0;31m"
 e="\033[0;90m"
 x="\033[0m"
+
+qn_projectname="$QN_PROJECTNAME"
 
 show_help() {
 cat << EOF
@@ -185,6 +188,7 @@ cat << EOF
     -d           Don't upload, but dump upload file to stdout
     -K           Remove color from the output
     -v           Verbose mode
+    -M           Project Team
 
 EOF
 }
@@ -241,7 +245,7 @@ parse_yaml() {
 
 if [ $# != 0 ];
 then
-  while getopts "a:A:b:B:cC:dD:e:f:F:g:G:hJ:k:Kn:p:P:r:R:y:s:S:t:T:u:U:vx:X:ZN:" o
+  while getopts "a:A:b:B:cC:dD:e:f:F:g:G:hJ:k:Kn:p:P:r:R:y:s:S:t:T:u:U:vx:X:ZN:M:" o
   do
     case "$o" in
       "N")
@@ -426,6 +430,9 @@ $OPTARG"
         ;;
       "Z")
         exit_with=1
+        ;;
+      "M")
+        qn_projectname=$OPTARG
         ;;
     esac
   done
@@ -977,17 +984,33 @@ else
   branch=$(urlencode "$branch")
 fi
 
-query="branch=$branch\
-       &commit=$commit\
-       &build=$([ "$build_o" = "" ] && echo "$build" || echo "$build_o")\
-       &build_url=$build_url\
-       &name=$(urlencode "$name")\
-       &tag=$([ "$tag_o" = "" ] && echo "$tag" || echo "$tag_o")\
-       &slug=$([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")\
-       &service=$service\
-       &flags=$flags\
-       &pr=$([ "$pr_o" = "" ] && echo "${pr##\#}" || echo "${pr_o##\#}")\
-       &job=$job"
+
+
+#上报平台($service)，项目组（pda_projectname），服务（$slug），分支$branch，类型（flags），commit，build(job),build_url（buildid）,时间
+currenttime_ms="`date +%s`000"
+
+pdaorigin="$service$PDA_FGF\
+          $qn_projectname$PDA_FGF\
+          $([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")$PDA_FGF\
+          $branch$PDA_FGF\
+          $flags$PDA_FGF\
+          $commit$PDA_FGF\
+          $([ "$build_o" = "" ] && echo "$build" || echo "$build_o")$PDA_FGF\
+          $build_url$PDA_FGF\
+          $currenttime_ms"
+
+
+query="branch=$branch$PDA_FGF\
+       commit=$commit$PDA_FGF\
+       build=$([ "$build_o" = "" ] && echo "$build" || echo "$build_o")$PDA_FGF\
+       build_url=$build_url$PDA_FGF\
+       name=$(urlencode "$name")$PDA_FGF\
+       tag=$([ "$tag_o" = "" ] && echo "$tag" || echo "$tag_o")$PDA_FGF\
+       slug=$([ "$slug_o" = "" ] && urlencode "$slug" || urlencode "$slug_o")$PDA_FGF\
+       service=$service$PDA_FGF\
+       flags=$flags$PDA_FGF\
+       pr=$([ "$pr_o" = "" ] && echo "${pr##\#}" || echo "${pr_o##\#}")$PDA_FGF\
+       job=$job"
 
 if [ ! -z "$project" ] && [ ! -z "$server_uri" ];
 then
@@ -1337,8 +1360,8 @@ then
   fi
 fi
 
-upload_file=`mktemp /tmp/codecov.XXXXXX`
-adjustments_file=`mktemp /tmp/codecov.adjustments.XXXXXX`
+upload_file=`mktemp /tmp/pdacodecov.XXXXXX`
+adjustments_file=`mktemp /tmp/pdacodecov.adjustments.XXXXXX`
 
 cleanup() {
     rm -f $upload_file $adjustments_file $upload_file.gz
@@ -1602,7 +1625,7 @@ if [ "$dump" != "0" ];
 then
   # trim whitespace from query
   say "    ${e}->${x} Dumping upload file (no upload)"
-  echo "$url/upload/v4?$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')"
+  echo "$url/upload/v4?$(echo "$query" | tr -d ' ')"
   cat $upload_file
 else
 
@@ -1614,69 +1637,32 @@ else
   say "    ${e}url:${x} $url"
   say "    ${e}query:${x} $query"
 
-  # Full query without token (to display on terminal output)
-  queryNoToken=$(echo "package=bash-$VERSION&token=secret&$query" | tr -d ' ')
-  # now add token to query
-  query=$(echo "package=bash-$VERSION&token=$token&$query" | tr -d ' ')
+  query=$(echo "$query" | tr -d ' ')
 
-  if [ "$ft_s3" = "1" ];
-  then
-    i="0"
-    while [ $i -lt 4 ]
-    do
-      i=$[$i+1]
-      say "    ${e}->${x} Pinging Codecov"
-      say "$url/upload/v4?$queryNoToken"
-      res=$(curl $curl_s -X POST $curlargs $cacert \
-            -H 'X-Reduced-Redundancy: false' \
-            -H 'X-Content-Type: application/x-gzip' \
-            "$url/upload/v4?$query" || true)
-      # a good replay is "https://codecov.io" + "\n" + "https://codecov.s3.amazonaws.com/..."
-      status=$(echo "$res" | head -1 | grep 'HTTP ' | cut -d' ' -f2)
-      if [ "$status" = "" ];
-      then
-        s3target=$(echo "$res" | sed -n 2p)
-        say "    ${e}->${x} Uploading"
+#pdaorigin
+  pdaorigin=$(echo "${pdaorigin}" | tr -d ' ')
+  say "    ${e}pdaorigin:${x} $pdaorigin"
+  pdaorigin=$(echo "$pdaorigin" | tr -d ' ')
 
-
-        s3=$(curl $curl_s -fiX PUT $curlawsargs \
-            --data-binary @$upload_file.gz \
-            -H 'Content-Type: application/x-gzip' \
-            -H 'Content-Encoding: gzip' \
-            "$s3target" || true)
-
-
-        if [ "$s3" != "" ];
-        then
-          say "    ${g}->${x} View reports at ${b}$(echo "$res" | sed -n 1p)${x}"
-          exit 0
-        else
-          say "    ${r}X>${x} Failed to upload"
-        fi
-      elif [ "$status" = "400" ];
-      then
-          # 400 Error
-          say "${g}${res}${x}"
-          exit ${exit_with}
-      fi
-      say "    ${e}->${x} Sleeping for 30s and trying again..."
-      sleep 30
-    done
-  fi
-
+ #&host=$query 等7.0版本上线后上传
   say "    ${e}->${x} Uploading to Codecov"
   i="0"
   while [ $i -lt 4 ]
   do
     i=$[$i+1]
 
+    echo "---1-----"
+    echo $curlargs
+    echo $cacert
+    echo $query
+    echo "---2-----"
     res=$(curl $curl_s -X POST $curlargs $cacert \
           --data-binary @$upload_file.gz \
           -H 'Content-Type: text/plain' \
           -H 'Content-Encoding: gzip' \
           -H 'X-Content-Encoding: gzip' \
           -H 'Accept: text/plain' \
-          "$url/upload/v2?$query" || echo 'HTTP 500')
+          "$url?origin=$pdaorigin" || echo 'HTTP 500')
     # HTTP 200
     # http://....
     status=$(echo "$res" | head -1 | cut -d' ' -f2)
