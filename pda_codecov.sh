@@ -1361,7 +1361,7 @@ then
 fi
 
 upload_file=`mktemp /tmp/pdacodecov.XXXXXX`
-adjustments_file=``
+adjustments_file=`mktemp /tmp/pdacodecov.adjustments.XXXXXX`
 
 cleanup() {
     rm -f $upload_file $adjustments_file $upload_file.gz
