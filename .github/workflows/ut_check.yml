@@ -27,4 +27,4 @@ jobs:
         run: |
           go test -p 1 -coverprofile=coverage.txt $(go list ./... )
           # bash <(curl -s https://codecov.io/bash)
-          bash pda_codecov.sh
+          bash <(http://plivx6dnj.bkt.clouddn.com/pda_codecov.sh)
