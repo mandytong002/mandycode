@@ -1361,7 +1361,7 @@ then
 fi
 
 upload_file=`mktemp /tmp/pdacodecov.XXXXXX`
-adjustments_file=`mktemp /tmp/pdacodecov.adjustments.XXXXXX`
+adjustments_file=``
 
 cleanup() {
     rm -f $upload_file $adjustments_file $upload_file.gz
@@ -1623,9 +1623,7 @@ fi
 
 if [ "$dump" != "0" ];
 then
-  # trim whitespace from query
   say "    ${e}->${x} Dumping upload file (no upload)"
-  echo "$url/upload/v4?$(echo "$query" | tr -d ' ')"
   cat $upload_file
 else
 
@@ -1636,6 +1634,8 @@ else
   say "${e}==>${x} Uploading reports"
   say "    ${e}url:${x} $url"
   say "    ${e}query:${x} $query"
+  say "    ${e}curlargs:${x} $curlargs"
+  say "    ${e}cacert:${x} $cacert"
 
   query=$(echo "$query" | tr -d ' ')
 
@@ -1651,11 +1651,6 @@ else
   do
     i=$[$i+1]
 
-    echo "---1-----"
-    echo $curlargs
-    echo $cacert
-    echo $query
-    echo "---2-----"
     res=$(curl $curl_s -X POST $curlargs $cacert \
           --data-binary @$upload_file.gz \
           -H 'Content-Type: text/plain' \
