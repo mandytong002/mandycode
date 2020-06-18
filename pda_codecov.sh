@@ -1641,7 +1641,7 @@ else
 
 #pdaorigin
   pdaorigin=$(echo "${pdaorigin}" | tr -d ' ')
-  say "    ${e}pdaorigin:${x} pdaorigin"
+  say "    ${e}pdaorigin:${x} $pdaorigin"
   pdaorigin=$(echo "$pdaorigin" | tr -d ' ')
 
  #&host=$query 等7.0版本上线后上传
