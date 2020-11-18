@@ -1,0 +1,12 @@
+{
+  "coverage": {
+    "notify": {
+      "slack": {
+        "frontui": {
+          "url": "https://ins-pipeline.qiniu.io/codecoveevent",
+          "only_pulls": false
+        }
+      }
+    }
+  }
+}
